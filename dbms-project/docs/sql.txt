@@ -1,0 +1,208 @@
+-- Database Setup for Time Slot Reservation System
+
+-- Drop existing tables (if any) in correct order
+DROP TABLE WorkOn;
+DROP TABLE WalkInService;
+DROP TABLE Appointment;
+DROP TABLE ServiceIncluded;
+DROP TABLE ServicePackage;
+DROP TABLE Service;
+DROP TABLE Employee;
+DROP TABLE Customer;
+DROP TABLE Manager;
+
+-- Drop sequences
+DROP SEQUENCE Customer_Seq;
+DROP SEQUENCE Employee_Seq;
+DROP SEQUENCE Service_Seq;
+DROP SEQUENCE Package_Seq;
+DROP SEQUENCE Appointment_Seq;
+DROP SEQUENCE WalkIn_Seq;
+DROP SEQUENCE Manager_Seq;
+
+-- Create sequences
+CREATE SEQUENCE Customer_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Employee_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Service_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Package_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Appointment_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE WalkIn_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Manager_Seq START WITH 1 INCREMENT BY 1;
+
+-- Create tables
+CREATE TABLE Customer (
+    Customer_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL,
+    RegistrationDate DATE DEFAULT SYSDATE NOT NULL
+);
+
+CREATE TABLE Employee (
+    Employee_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL,
+    Specialization VARCHAR2(50) NOT NULL,
+    WorkStatus VARCHAR2(20) CHECK (WorkStatus IN ('Active', 'On Leave', 'Terminated')) NOT NULL
+);
+
+CREATE TABLE Service (
+    Service_ID NUMBER PRIMARY KEY,
+    ServiceName VARCHAR2(100) NOT NULL,
+    Description VARCHAR2(500),
+    Price NUMBER(10,2) NOT NULL,
+    Duration NUMBER NOT NULL, -- in minutes
+    Category VARCHAR2(50) NOT NULL
+);
+
+CREATE TABLE ServicePackage (
+    Package_ID NUMBER PRIMARY KEY,
+    PackageName VARCHAR2(100) NOT NULL,
+    Description VARCHAR2(500),
+    TotalPrice NUMBER(10,2) NOT NULL
+);
+
+CREATE TABLE ServiceIncluded (
+    Package_ID NUMBER,
+    Service_ID NUMBER,
+    PRIMARY KEY (Package_ID, Service_ID),
+    FOREIGN KEY (Package_ID) REFERENCES ServicePackage(Package_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE Manager (
+    Manager_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE Appointment (
+    Appointment_ID NUMBER PRIMARY KEY,
+    Customer_ID NUMBER NOT NULL,
+    Employee_ID NUMBER NOT NULL,
+    Service_ID NUMBER NOT NULL,
+    AppointmentDate DATE NOT NULL,
+    StartTime TIMESTAMP NOT NULL,
+    EndTime TIMESTAMP NOT NULL,
+    Status VARCHAR2(20) CHECK (Status IN ('Pending', 'Confirmed', 'Completed', 'Cancelled')) NOT NULL,
+    TotalCost NUMBER(10,2) NOT NULL,
+    FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE WalkInService (
+    WalkIn_ID NUMBER PRIMARY KEY,
+    Customer_ID NUMBER,
+    Employee_ID NUMBER NOT NULL,
+    Service_ID NUMBER NOT NULL,
+    ServiceDate DATE DEFAULT SYSDATE NOT NULL,
+    StartTime TIMESTAMP NOT NULL,
+    EndTime TIMESTAMP NOT NULL,
+    TotalCost NUMBER(10,2) NOT NULL,
+    FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE WorkOn (
+    Appointment_ID NUMBER,
+    Employee_ID NUMBER,
+    AssignedDate DATE DEFAULT SYSDATE NOT NULL,
+    WorkStartTime TIMESTAMP,
+    WorkEndTime TIMESTAMP,
+    Status VARCHAR2(20) CHECK (Status IN ('Assigned', 'In Progress', 'Completed', 'Cancelled')) NOT NULL,
+    PRIMARY KEY (Appointment_ID, Employee_ID),
+    FOREIGN KEY (Appointment_ID) REFERENCES Appointment(Appointment_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
+);
+
+-- Insert sample data
+-- Services
+INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) VALUES
+(Service_Seq.NEXTVAL, 'Bridal Makeup', 'Complete bridal makeup package including trial session', 250, 120, 'Bridal');
+
+INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) VALUES
+(Service_Seq.NEXTVAL, 'Cosplay Basic', 'Basic character transformation for cosplayers', 100, 60, 'Cosplay');
+
+INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) VALUES
+(Service_Seq.NEXTVAL, 'Cosplay Advanced', 'Advanced character transformation with special effects', 200, 120, 'Cosplay');
+
+INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) VALUES
+(Service_Seq.NEXTVAL, 'Special Effects Makeup', 'Professional SFX makeup for events or productions', 180, 90, 'Special Effects');
+
+INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) VALUES
+(Service_Seq.NEXTVAL, 'Party Makeup', 'Glamorous makeup for special occasions', 80, 45, 'Events');
+
+-- Employees
+INSERT INTO Employee (Employee_ID, FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+(Employee_Seq.NEXTVAL, 'Sarah', 'Johnson', '555-0101', 'sarah.j@glamour.com', 'Bridal Makeup', 'Active');
+
+INSERT INTO Employee (Employee_ID, FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+(Employee_Seq.NEXTVAL, 'Mike', 'Chen', '555-0102', 'mike.c@glamour.com', 'Special Effects', 'Active');
+
+INSERT INTO Employee (Employee_ID, FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+(Employee_Seq.NEXTVAL, 'Yuki', 'Tanaka', '555-0103', 'yuki.t@glamour.com', 'Cosplay', 'Active');
+
+-- Managers
+INSERT INTO Manager (Manager_ID, FirstName, LastName, PhoneNumber, Email) VALUES
+(Manager_Seq.NEXTVAL, 'Emma', 'Davis', '555-0001', 'emma.d@glamour.com');
+
+-- Service Packages
+INSERT INTO ServicePackage (Package_ID, PackageName, Description, TotalPrice) VALUES
+(Package_Seq.NEXTVAL, 'Complete Bridal Package', 'Full bridal service including trial and event day makeup', 400);
+
+INSERT INTO ServicePackage (Package_ID, PackageName, Description, TotalPrice) VALUES
+(Package_Seq.NEXTVAL, 'Cosplay Competition Package', 'Complete character transformation with effects', 300);
+
+-- Commit changes
+COMMIT;
+
+-- Create indexes for better performance
+CREATE INDEX idx_appointment_date ON Appointment(AppointmentDate);
+CREATE INDEX idx_employee_status ON Employee(WorkStatus);
+CREATE INDEX idx_service_category ON Service(Category);
+
+-- Optional: Create view for available time slots
+CREATE OR REPLACE VIEW AvailableTimeSlots AS
+SELECT 
+    e.Employee_ID,
+    e.FirstName || ' ' || e.LastName AS EmployeeName,
+    e.Specialization,
+    t.SlotDate,
+    t.StartTime,
+    t.EndTime
+FROM Employee e
+CROSS JOIN (
+    SELECT 
+        TRUNC(SYSDATE) + LEVEL AS SlotDate,
+        TIMESTAMP '2024-01-01 09:00:00' + NUMTODSINTERVAL(LEVEL-1, 'HOUR') AS StartTime,
+        TIMESTAMP '2024-01-01 09:00:00' + NUMTODSINTERVAL(LEVEL, 'HOUR') AS EndTime
+    FROM dual
+    CONNECT BY LEVEL <= 8
+) t
+WHERE e.WorkStatus = 'Active'
+AND NOT EXISTS (
+    SELECT 1 FROM Appointment a
+    WHERE a.Employee_ID = e.Employee_ID
+    AND a.AppointmentDate = t.SlotDate
+    AND a.Status != 'Cancelled'
+    AND (a.StartTime BETWEEN t.StartTime AND t.EndTime
+         OR a.EndTime BETWEEN t.StartTime AND t.EndTime)
+);
+
+-- Grant necessary permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON Customer TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Employee TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Service TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Appointment TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON WalkInService TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ServicePackage TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ServiceIncluded TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Manager TO your_app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON WorkOn TO your_app_user; 
