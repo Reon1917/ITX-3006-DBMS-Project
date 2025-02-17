@@ -1,0 +1,445 @@
+-- ====================================================
+-- Conditional Drop: Drop tables if they exist
+-- ====================================================
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE WorkOn CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE WalkInService CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Appointment CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE ServiceIncluded CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE ServicePackage CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Service CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Employee CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Customer CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE Manager CASCADE CONSTRAINTS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN RAISE; END IF;
+END;
+/
+
+-- ====================================================
+-- Conditional Drop: Drop sequences if they exist
+-- ====================================================
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Customer_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Employee_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Service_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Package_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Appointment_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE WalkIn_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+BEGIN
+   EXECUTE IMMEDIATE 'DROP SEQUENCE Manager_Seq';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -2289 THEN RAISE; END IF;
+END;
+/
+
+-- ====================================================
+-- Create Application User (Uncomment if needed)
+-- ====================================================
+-- Replace 'your_app_user' and 'your_password' with your desired credentials.
+-- CREATE USER your_app_user IDENTIFIED BY your_password;
+-- GRANT CONNECT, RESOURCE TO your_app_user;
+
+-- ====================================================
+-- Create Sequences
+-- ====================================================
+CREATE SEQUENCE Customer_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Employee_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Service_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Package_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Appointment_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE WalkIn_Seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE Manager_Seq START WITH 1 INCREMENT BY 1;
+
+-- ====================================================
+-- Create Tables
+-- ====================================================
+CREATE TABLE Customer (
+    Customer_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL,
+    RegistrationDate DATE DEFAULT SYSDATE NOT NULL
+);
+
+CREATE TABLE Employee (
+    Employee_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL,
+    Specialization VARCHAR2(50) NOT NULL,
+    WorkStatus VARCHAR2(20) CHECK (WorkStatus IN ('Active', 'On Leave', 'Terminated')) NOT NULL
+);
+
+CREATE TABLE Service (
+    Service_ID NUMBER PRIMARY KEY,
+    ServiceName VARCHAR2(100) NOT NULL,
+    Description VARCHAR2(500),
+    Price NUMBER(10,2) NOT NULL,
+    Duration NUMBER NOT NULL, -- in minutes
+    Category VARCHAR2(50) NOT NULL
+);
+
+CREATE TABLE ServicePackage (
+    Package_ID NUMBER PRIMARY KEY,
+    PackageName VARCHAR2(100) NOT NULL,
+    Description VARCHAR2(500),
+    TotalPrice NUMBER(10,2) NOT NULL
+);
+
+CREATE TABLE ServiceIncluded (
+    Package_ID NUMBER,
+    Service_ID NUMBER,
+    PRIMARY KEY (Package_ID, Service_ID),
+    FOREIGN KEY (Package_ID) REFERENCES ServicePackage(Package_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE Manager (
+    Manager_ID NUMBER PRIMARY KEY,
+    FirstName VARCHAR2(50) NOT NULL,
+    LastName VARCHAR2(50) NOT NULL,
+    PhoneNumber VARCHAR2(15) NOT NULL,
+    Email VARCHAR2(100) UNIQUE NOT NULL
+);
+
+CREATE TABLE Appointment (
+    Appointment_ID NUMBER PRIMARY KEY,
+    Customer_ID NUMBER NOT NULL,
+    Employee_ID NUMBER NOT NULL,
+    Service_ID NUMBER NOT NULL,
+    AppointmentDate DATE NOT NULL,
+    StartTime TIMESTAMP NOT NULL,
+    EndTime TIMESTAMP NOT NULL,
+    Status VARCHAR2(20) CHECK (Status IN ('Pending', 'Confirmed', 'Completed', 'Cancelled')) NOT NULL,
+    TotalCost NUMBER(10,2) NOT NULL,
+    FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE WalkInService (
+    WalkIn_ID NUMBER PRIMARY KEY,
+    Customer_ID NUMBER,
+    Employee_ID NUMBER NOT NULL,
+    Service_ID NUMBER NOT NULL,
+    ServiceDate DATE DEFAULT SYSDATE NOT NULL,
+    StartTime TIMESTAMP NOT NULL,
+    EndTime TIMESTAMP NOT NULL,
+    TotalCost NUMBER(10,2) NOT NULL,
+    FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Service(Service_ID)
+);
+
+CREATE TABLE WorkOn (
+    Appointment_ID NUMBER,
+    Employee_ID NUMBER,
+    AssignedDate DATE DEFAULT SYSDATE NOT NULL,
+    WorkStartTime TIMESTAMP,
+    WorkEndTime TIMESTAMP,
+    Status VARCHAR2(20) CHECK (Status IN ('Assigned', 'In Progress', 'Completed', 'Cancelled')) NOT NULL,
+    PRIMARY KEY (Appointment_ID, Employee_ID),
+    FOREIGN KEY (Appointment_ID) REFERENCES Appointment(Appointment_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
+);
+
+-- ====================================================
+-- Create Triggers for Auto-Populating Primary Keys
+-- ====================================================
+CREATE OR REPLACE TRIGGER trg_customer_pk
+BEFORE INSERT ON Customer
+FOR EACH ROW
+BEGIN
+   IF :NEW.Customer_ID IS NULL THEN
+      SELECT Customer_Seq.NEXTVAL INTO :NEW.Customer_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_employee_pk
+BEFORE INSERT ON Employee
+FOR EACH ROW
+BEGIN
+   IF :NEW.Employee_ID IS NULL THEN
+      SELECT Employee_Seq.NEXTVAL INTO :NEW.Employee_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_service_pk
+BEFORE INSERT ON Service
+FOR EACH ROW
+BEGIN
+   IF :NEW.Service_ID IS NULL THEN
+      SELECT Service_Seq.NEXTVAL INTO :NEW.Service_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_servicepackage_pk
+BEFORE INSERT ON ServicePackage
+FOR EACH ROW
+BEGIN
+   IF :NEW.Package_ID IS NULL THEN
+      SELECT Package_Seq.NEXTVAL INTO :NEW.Package_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_manager_pk
+BEFORE INSERT ON Manager
+FOR EACH ROW
+BEGIN
+   IF :NEW.Manager_ID IS NULL THEN
+      SELECT Manager_Seq.NEXTVAL INTO :NEW.Manager_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_appointment_pk
+BEFORE INSERT ON Appointment
+FOR EACH ROW
+BEGIN
+   IF :NEW.Appointment_ID IS NULL THEN
+      SELECT Appointment_Seq.NEXTVAL INTO :NEW.Appointment_ID FROM dual;
+   END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_walkin_pk
+BEFORE INSERT ON WalkInService
+FOR EACH ROW
+BEGIN
+   IF :NEW.WalkIn_ID IS NULL THEN
+      SELECT WalkIn_Seq.NEXTVAL INTO :NEW.WalkIn_ID FROM dual;
+   END IF;
+END;
+/
+
+-- ====================================================
+-- Insert Sample Data (Triggers will handle IDs)
+-- ====================================================
+
+-- Sample Customers
+INSERT INTO Customer (FirstName, LastName, PhoneNumber, Email) VALUES
+('John', 'Doe', '555-0201', 'john.d@email.com');
+
+INSERT INTO Customer (FirstName, LastName, PhoneNumber, Email) VALUES
+('Jane', 'Smith', '555-0202', 'jane.s@email.com');
+
+INSERT INTO Customer (FirstName, LastName, PhoneNumber, Email) VALUES
+('Alice', 'Johnson', '555-0203', 'alice.j@email.com');
+
+-- Sample Services
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Bridal Makeup', 'Complete bridal makeup package including trial session', 250, 120, 'Bridal');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Cosplay Basic', 'Basic character transformation for cosplayers', 100, 60, 'Cosplay');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Cosplay Advanced', 'Advanced character transformation with special effects', 200, 120, 'Cosplay');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Special Effects Makeup', 'Professional SFX makeup for events or productions', 180, 90, 'Special Effects');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Party Makeup', 'Glamorous makeup for special occasions', 80, 45, 'Events');
+
+-- Sample Employees
+INSERT INTO Employee (FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+('Sarah', 'Johnson', '555-0101', 'sarah.j@glamour.com', 'Bridal Makeup', 'Active');
+
+INSERT INTO Employee (FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+('Mike', 'Chen', '555-0102', 'mike.c@glamour.com', 'Special Effects', 'Active');
+
+INSERT INTO Employee (FirstName, LastName, PhoneNumber, Email, Specialization, WorkStatus) VALUES
+('Yuki', 'Tanaka', '555-0103', 'yuki.t@glamour.com', 'Cosplay', 'Active');
+
+-- Sample Manager
+INSERT INTO Manager (FirstName, LastName, PhoneNumber, Email) VALUES
+('Emma', 'Davis', '555-0001', 'emma.d@glamour.com');
+
+-- Sample Service Packages
+INSERT INTO ServicePackage (PackageName, Description, TotalPrice) VALUES
+('Complete Bridal Package', 'Full bridal service including trial and event day makeup', 400);
+
+INSERT INTO ServicePackage (PackageName, Description, TotalPrice) VALUES
+('Cosplay Competition Package', 'Complete character transformation with effects', 300);
+
+-- Sample Service Inclusions
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (1, 1); -- Bridal Package includes Bridal Makeup
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (2, 2); -- Cosplay Package includes Basic Cosplay
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (2, 3); -- Cosplay Package includes Advanced Cosplay
+
+COMMIT;
+
+-- ====================================================
+-- Create Indexes for Better Performance
+-- ====================================================
+CREATE INDEX idx_appointment_date ON Appointment(AppointmentDate);
+CREATE INDEX idx_employee_status ON Employee(WorkStatus);
+CREATE INDEX idx_service_category ON Service(Category);
+CREATE INDEX idx_customer_email ON Customer(Email);
+CREATE INDEX idx_appointment_status ON Appointment(Status);
+
+-- ====================================================
+-- Create a View for Available Time Slots
+-- ====================================================
+CREATE OR REPLACE VIEW AvailableTimeSlots AS
+SELECT 
+    e.Employee_ID,
+    e.FirstName || ' ' || e.LastName AS EmployeeName,
+    e.Specialization,
+    t.SlotDate,
+    t.StartTime,
+    t.EndTime
+FROM Employee e
+CROSS JOIN (
+    SELECT 
+        TRUNC(SYSDATE) + LEVEL AS SlotDate,
+        TO_TIMESTAMP(TO_CHAR(TRUNC(SYSDATE) + LEVEL, 'YYYY-MM-DD') || ' 09:00:00', 'YYYY-MM-DD HH24:MI:SS') + NUMTODSINTERVAL(LEVEL-1, 'HOUR') AS StartTime,
+        TO_TIMESTAMP(TO_CHAR(TRUNC(SYSDATE) + LEVEL, 'YYYY-MM-DD') || ' 09:00:00', 'YYYY-MM-DD HH24:MI:SS') + NUMTODSINTERVAL(LEVEL, 'HOUR') AS EndTime
+    FROM dual
+    CONNECT BY LEVEL <= 8
+) t
+WHERE e.WorkStatus = 'Active'
+AND NOT EXISTS (
+    SELECT 1 FROM Appointment a
+    WHERE a.Employee_ID = e.Employee_ID
+      AND a.AppointmentDate = t.SlotDate
+      AND a.Status != 'Cancelled'
+      AND (a.StartTime BETWEEN t.StartTime AND t.EndTime
+           OR a.EndTime BETWEEN t.StartTime AND t.EndTime)
+);
+
+-- ====================================================
+-- Grant Permissions (Using actual application user)
+-- ====================================================
+GRANT SELECT, INSERT, UPDATE, DELETE ON Customer TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Employee TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Service TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Appointment TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON WalkInService TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ServicePackage TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ServiceIncluded TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON Manager TO DBMS111;
+GRANT SELECT, INSERT, UPDATE, DELETE ON WorkOn TO DBMS111;
+GRANT SELECT ON AvailableTimeSlots TO DBMS111;
+
+-- ====================================================
+-- Clean up duplicate services
+-- ====================================================
+DELETE FROM ServiceIncluded;
+DELETE FROM Service;
+
+-- Re-insert services without duplicates
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Bridal Makeup', 'Complete bridal makeup package including trial session', 250, 120, 'Bridal');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Cosplay Basic', 'Basic character transformation for cosplayers', 100, 60, 'Cosplay');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Cosplay Advanced', 'Advanced character transformation with special effects', 200, 120, 'Cosplay');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Special Effects Makeup', 'Professional SFX makeup for events or productions', 180, 90, 'Special Effects');
+
+INSERT INTO Service (ServiceName, Description, Price, Duration, Category) VALUES
+('Party Makeup', 'Glamorous makeup for special occasions', 80, 45, 'Events');
+
+-- Re-insert service package inclusions
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (1, 1); -- Bridal Package includes Bridal Makeup
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (2, 2); -- Cosplay Package includes Basic Cosplay
+INSERT INTO ServiceIncluded (Package_ID, Service_ID) VALUES (2, 3); -- Cosplay Package includes Advanced Cosplay
+
+COMMIT;

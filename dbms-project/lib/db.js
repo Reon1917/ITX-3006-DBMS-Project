@@ -1,7 +1,15 @@
 const oracledb = require('oracledb');
 
-// Disable all config providers to avoid Azure dependencies
-oracledb.initOracleClient({ configDir: false });
+// Initialize Oracle client in Thick mode
+try {
+  // Enable Thick mode
+  oracledb.initOracleClient({
+    libDir: process.env.ORACLE_CLIENT_PATH // Path to Oracle Instant Client
+  });
+} catch (err) {
+  console.error('Oracle Client library initialization error:', err);
+  console.error('Please ensure Oracle Instant Client is installed and ORACLE_CLIENT_PATH is set correctly');
+}
 
 // Set autoCommit to true for simple queries
 oracledb.autoCommit = true;
