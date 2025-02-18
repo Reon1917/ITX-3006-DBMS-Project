@@ -1,4 +1,4 @@
-const oracledb = require('oracledb');
+import oracledb from 'oracledb';
 
 // Initialize Oracle client in Thick mode
 try {
@@ -14,49 +14,48 @@ try {
 // Set autoCommit to true for simple queries
 oracledb.autoCommit = true;
 
-// Initialize connection pool
 let pool;
 
 async function initialize() {
   try {
-    if (!pool) {
-      pool = await oracledb.createPool({
-        user: process.env.ORACLE_USER,
-        password: process.env.ORACLE_PASSWORD,
-        connectString: process.env.ORACLE_CONNECT_STRING,
-        poolMin: 2,
-        poolMax: 10,
-        poolIncrement: 1
-      });
-      console.log('Connection pool created');
-    }
-    return pool;
+    await oracledb.createPool({
+      user: process.env.ORACLE_USER,
+      password: process.env.ORACLE_PASSWORD,
+      connectString: process.env.ORACLE_CONNECT_STRING,
+      poolMin: 2,
+      poolMax: 10,
+      poolIncrement: 1
+    });
+    console.log('Connection pool created');
   } catch (err) {
-    console.error('Error creating connection pool:', err);
+    console.error('Error creating pool: ' + err.message);
     throw err;
   }
 }
 
-async function closePool() {
+export async function getConnection() {
+  if (!pool) {
+    await initialize();
+  }
+  return await oracledb.getConnection();
+}
+
+export async function closePool() {
   try {
-    if (pool) {
-      await pool.close();
-      pool = null;
-      console.log('Pool closed');
-    }
+    await oracledb.getPool().close(10);
+    console.log('Pool closed');
   } catch (err) {
-    console.error('Error closing pool:', err);
-    throw err;
+    console.error(err);
   }
 }
 
-async function execute(sql, binds = [], opts = {}) {
+export async function execute(sql, binds = [], opts = {}) {
   let connection;
   try {
     if (!pool) {
       await initialize();
     }
-    connection = await pool.getConnection();
+    connection = await oracledb.getConnection();
     const options = {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
       autoCommit: true,
@@ -78,8 +77,4 @@ async function execute(sql, binds = [], opts = {}) {
   }
 }
 
-module.exports = {
-  execute,
-  closePool,
-  initialize
-}; 
+export { initialize }; 

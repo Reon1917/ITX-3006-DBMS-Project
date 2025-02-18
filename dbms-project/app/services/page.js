@@ -1,138 +1,100 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
-  Button,
-  Chip,
-  Box,
-  CircularProgress,
-  Alert
-} from '@mui/material';
-import Navbar from '@/components/Navbar';
+import { Container, Grid, Card, CardContent, Typography, Button, Box, CircularProgress } from '@mui/material';
+import { useRouter } from 'next/navigation';
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await fetch('/api/services');
-        if (!response.ok) throw new Error('Failed to fetch services');
-        const data = await response.json();
-        setServices(data.services);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchServices();
   }, []);
 
-  const handleBooking = (serviceId) => {
-    // TODO: Implement booking modal
-    console.log('Booking service:', serviceId);
+  const fetchServices = async () => {
+    try {
+      const response = await fetch('/api/services');
+      if (!response.ok) throw new Error('Failed to fetch services');
+      const data = await response.json();
+      setServices(Array.isArray(data) ? data : []);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      setIsLoading(false);
+    }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <>
-        <Navbar />
-        <Container sx={{ mt: 4, textAlign: 'center' }}>
-          <CircularProgress />
-        </Container>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <Navbar />
-        <Container sx={{ mt: 4 }}>
-          <Alert severity="error">Error: {error}</Alert>
-        </Container>
-      </>
+      <Container maxWidth="lg" sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Container>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
-        <Typography
-          variant="h3"
-          component="h1"
-          gutterBottom
-          align="center"
-          sx={{ mb: 6, fontWeight: 'bold', color: 'primary.main' }}
-        >
-          Our Services
+    <Container maxWidth="lg" sx={{ py: 8 }}>
+      <Box textAlign="center" mb={8}>
+        <Typography variant="h2" component="h1" gutterBottom color="primary">
+          Glamour & Style Studio
         </Typography>
+        <Typography variant="h5" component="h2" color="text.secondary" mb={4}>
+          Professional makeup services for all occasions - from bridal to cosplay transformations
+        </Typography>
+      </Box>
 
-        <Grid container spacing={4}>
-          {services.map((service) => (
-            <Grid item xs={12} md={4} key={service.SERVICE_ID}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 4,
-                  },
-                }}
-              >
-                <CardHeader
-                  title={service.SERVICENAME}
-                  subheader={`Duration: ${service.DURATION} minutes`}
-                  action={
-                    <Chip 
-                      label={service.CATEGORY}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                    />
-                  }
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
+      <Grid container spacing={4}>
+        {Array.isArray(services) && services.map((service) => (
+          <Grid item xs={12} md={4} key={service.SERVICE_ID}>
+            <Card 
+              sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  boxShadow: 6
+                }
+              }}
+            >
+              <CardContent sx={{ flexGrow: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <Typography variant="h5" component="h2" color="primary" gutterBottom>
+                    {service.SERVICENAME}
+                  </Typography>
                   <Typography variant="body1" color="text.secondary" paragraph>
                     {service.DESCRIPTION}
                   </Typography>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mt: 2
-                  }}>
-                    <Typography variant="h5" color="primary.main" fontWeight="bold">
-                      ${service.PRICE}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => handleBooking(service.SERVICE_ID)}
-                    >
-                      Book Now
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </>
+                </div>
+                <div>
+                  <Typography variant="h4" color="primary" gutterBottom>
+                    ${service.PRICE}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Duration: {service.DURATION} minutes
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Category: {service.CATEGORY}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() => router.push(`/book/${service.SERVICE_ID}`)}
+                  >
+                    Book Now
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
   );
 } 
