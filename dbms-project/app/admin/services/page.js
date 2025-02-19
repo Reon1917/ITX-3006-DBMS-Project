@@ -23,10 +23,13 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useRouter } from 'next/navigation';
 
 const categories = ['Bridal', 'Cosplay', 'Special Effects', 'Events'];
 
 export default function AdminServices() {
+  const router = useRouter();
   const [services, setServices] = useState([]);
   const [open, setOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -45,10 +48,14 @@ export default function AdminServices() {
   const fetchServices = async () => {
     try {
       const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
+      }
       const data = await response.json();
-      setServices(data);
+      setServices(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching services:', error);
+      setServices([]);
     }
   };
 
@@ -56,11 +63,11 @@ export default function AdminServices() {
     if (service) {
       setEditingService(service);
       setFormData({
-        ServiceName: service.ServiceName,
-        Description: service.Description,
-        Price: service.Price.toString(),
-        Duration: service.Duration.toString(),
-        Category: service.Category,
+        ServiceName: service.SERVICENAME || '',
+        Description: service.DESCRIPTION || '',
+        Price: service.PRICE?.toString() || '',
+        Duration: service.DURATION?.toString() || '',
+        Category: service.CATEGORY || '',
       });
     } else {
       setEditingService(null);
@@ -92,7 +99,7 @@ export default function AdminServices() {
     try {
       const method = editingService ? 'PUT' : 'POST';
       const url = editingService 
-        ? `/api/services/${editingService.Service_ID}`
+        ? `/api/services/${editingService.SERVICE_ID}`
         : '/api/services';
 
       const response = await fetch(url, {
@@ -111,10 +118,13 @@ export default function AdminServices() {
         handleClose();
         fetchServices();
       } else {
-        console.error('Error saving service');
+        const errorData = await response.json();
+        console.error('Error saving service:', errorData);
+        alert(errorData.error || 'Failed to save service');
       }
     } catch (error) {
       console.error('Error saving service:', error);
+      alert('Failed to save service');
     }
   };
 
@@ -128,18 +138,35 @@ export default function AdminServices() {
         if (response.ok) {
           fetchServices();
         } else {
-          console.error('Error deleting service');
+          const errorData = await response.json();
+          alert(errorData.error || 'Failed to delete service');
         }
       } catch (error) {
         console.error('Error deleting service:', error);
+        alert('Failed to delete service');
       }
     }
   };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
-        <Typography variant="h4" component="h1">
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, gap: 2 }}>
+        <Button
+          onClick={() => router.back()}
+          startIcon={<ArrowBackIcon />}
+          variant="outlined"
+          sx={{
+            borderColor: 'primary.main',
+            color: 'primary.main',
+            '&:hover': {
+              borderColor: 'primary.dark',
+              backgroundColor: 'primary.light',
+            },
+          }}
+        >
+          Back
+        </Button>
+        <Typography variant="h4" component="h1" sx={{ flexGrow: 1 }}>
           Manage Services
         </Typography>
         <Button
@@ -164,18 +191,18 @@ export default function AdminServices() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {services.map((service) => (
-              <TableRow key={service.Service_ID}>
-                <TableCell>{service.ServiceName}</TableCell>
-                <TableCell>{service.Description}</TableCell>
-                <TableCell>${service.Price}</TableCell>
-                <TableCell>{service.Duration}</TableCell>
-                <TableCell>{service.Category}</TableCell>
+            {services && services.map((service) => (
+              <TableRow key={service.SERVICE_ID}>
+                <TableCell>{service.SERVICENAME}</TableCell>
+                <TableCell>{service.DESCRIPTION}</TableCell>
+                <TableCell>${service.PRICE}</TableCell>
+                <TableCell>{service.DURATION}</TableCell>
+                <TableCell>{service.CATEGORY}</TableCell>
                 <TableCell>
                   <IconButton onClick={() => handleOpen(service)} color="primary">
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(service.Service_ID)} color="error">
+                  <IconButton onClick={() => handleDelete(service.SERVICE_ID)} color="error">
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -197,6 +224,7 @@ export default function AdminServices() {
             onChange={handleInputChange}
             fullWidth
             margin="normal"
+            required
           />
           <TextField
             name="Description"
@@ -216,6 +244,7 @@ export default function AdminServices() {
             fullWidth
             margin="normal"
             type="number"
+            required
           />
           <TextField
             name="Duration"
@@ -225,6 +254,7 @@ export default function AdminServices() {
             fullWidth
             margin="normal"
             type="number"
+            required
           />
           <TextField
             name="Category"
@@ -234,6 +264,7 @@ export default function AdminServices() {
             fullWidth
             margin="normal"
             select
+            required
           >
             {categories.map((category) => (
               <MenuItem key={category} value={category}>
@@ -244,7 +275,12 @@ export default function AdminServices() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained" 
+            color="primary"
+            disabled={!formData.ServiceName || !formData.Price || !formData.Duration || !formData.Category}
+          >
             {editingService ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
