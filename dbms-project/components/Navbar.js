@@ -1,17 +1,33 @@
 'use client';
 
-import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Container, Switch, FormControlLabel } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const navItems = [
     { label: 'Home', path: '/' },
     { label: 'Services', path: '/services' },
     { label: 'Appointments', path: '/appointments' },
   ];
+
+  // Add admin-specific nav items
+  const adminItems = isAdmin ? [
+    { label: 'Manage Services', path: '/admin/services' },
+    { label: 'Manage Employees', path: '/admin/employees' },
+  ] : [];
+
+  const allNavItems = [...navItems, ...adminItems];
+
+  const handleRoleSwitch = (event) => {
+    setIsAdmin(event.target.checked);
+    // Redirect to home when switching roles
+    router.push('/');
+  };
 
   return (
     <AppBar position="static" color="default" elevation={1}>
@@ -30,8 +46,8 @@ export default function Navbar() {
             Glamour & Style
           </Typography>
 
-          <div>
-            {navItems.map((item) => (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {allNavItems.map((item) => (
               <Button
                 key={item.path}
                 onClick={() => router.push(item.path)}
@@ -44,6 +60,17 @@ export default function Navbar() {
                 {item.label}
               </Button>
             ))}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isAdmin}
+                  onChange={handleRoleSwitch}
+                  color="primary"
+                />
+              }
+              label={isAdmin ? "Admin Mode" : "User Mode"}
+              sx={{ ml: 2 }}
+            />
           </div>
         </Toolbar>
       </Container>

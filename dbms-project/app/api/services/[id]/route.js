@@ -1,66 +1,35 @@
 import { NextResponse } from 'next/server';
 import oracledb from 'oracledb';
 
-// Database configuration
 const dbConfig = {
   user: process.env.ORACLE_USER,
   password: process.env.ORACLE_PASSWORD,
   connectString: process.env.ORACLE_CONNECT_STRING,
 };
 
-// GET /api/services
-export async function GET() {
+// GET /api/services/[id]
+export async function GET(request, { params }) {
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
-      `SELECT * FROM Service ORDER BY Service_ID`,
-      [],
+      `SELECT * FROM Service WHERE Service_ID = :1`,
+      [params.id],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    return NextResponse.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching services:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch services' },
-      { status: 500 }
-    );
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (error) {
-        console.error('Error closing connection:', error);
-      }
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Service not found' },
+        { status: 404 }
+      );
     }
-  }
-}
 
-// POST /api/services
-export async function POST(request) {
-  let connection;
-  try {
-    const body = await request.json();
-    const { ServiceName, Description, Price, Duration, Category } = body;
-
-    connection = await oracledb.getConnection(dbConfig);
-    const result = await connection.execute(
-      `INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) 
-       VALUES (Service_Seq.NEXTVAL, :1, :2, :3, :4, :5)
-       RETURNING Service_ID INTO :6`,
-      [ServiceName, Description, Price, Duration, Category, { dir: oracledb.BIND_OUT }],
-      { autoCommit: true }
-    );
-
-    return NextResponse.json({ 
-      message: 'Service created successfully',
-      Service_ID: result.outBinds[0][0]
-    }, { status: 201 });
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating service:', error);
+    console.error('Error fetching service:', error);
     return NextResponse.json(
-      { error: 'Failed to create service' },
+      { error: 'Failed to fetch service' },
       { status: 500 }
     );
   } finally {
@@ -82,7 +51,7 @@ export async function PUT(request, { params }) {
     const { ServiceName, Description, Price, Duration, Category } = body;
 
     connection = await oracledb.getConnection(dbConfig);
-    await connection.execute(
+    const result = await connection.execute(
       `UPDATE Service 
        SET ServiceName = :1, 
            Description = :2, 
@@ -93,6 +62,13 @@ export async function PUT(request, { params }) {
       [ServiceName, Description, Price, Duration, Category, params.id],
       { autoCommit: true }
     );
+
+    if (result.rowsAffected === 0) {
+      return NextResponse.json(
+        { error: 'Service not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ 
       message: 'Service updated successfully' 
@@ -134,11 +110,18 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await connection.execute(
+    const result = await connection.execute(
       `DELETE FROM Service WHERE Service_ID = :1`,
       [params.id],
       { autoCommit: true }
     );
+
+    if (result.rowsAffected === 0) {
+      return NextResponse.json(
+        { error: 'Service not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ 
       message: 'Service deleted successfully' 
