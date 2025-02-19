@@ -2,12 +2,17 @@
 
 import { AppBar, Toolbar, Typography, Button, Container, Switch, FormControlLabel } from '@mui/material';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const savedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+    setIsAdmin(savedIsAdmin);
+  }, []);
 
   const navItems = [
     { label: 'Home', path: '/' },
@@ -24,9 +29,12 @@ export default function Navbar() {
   const allNavItems = [...navItems, ...adminItems];
 
   const handleRoleSwitch = (event) => {
-    setIsAdmin(event.target.checked);
-    // Redirect to home when switching roles
-    router.push('/');
+    const newAdminState = event.target.checked;
+    setIsAdmin(newAdminState);
+    localStorage.setItem('isAdmin', newAdminState);
+    if (!newAdminState && pathname.startsWith('/admin')) {
+      router.push('/');
+    }
   };
 
   return (

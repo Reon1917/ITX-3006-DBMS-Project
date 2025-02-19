@@ -1,22 +1,13 @@
 import { NextResponse } from 'next/server';
+import { execute } from '@/lib/db';
 import oracledb from 'oracledb';
-
-// Database configuration
-const dbConfig = {
-  user: process.env.ORACLE_USER,
-  password: process.env.ORACLE_PASSWORD,
-  connectString: process.env.ORACLE_CONNECT_STRING,
-};
 
 // GET /api/services
 export async function GET() {
-  let connection;
   try {
-    connection = await oracledb.getConnection(dbConfig);
-    const result = await connection.execute(
+    const result = await execute(
       `SELECT * FROM Service ORDER BY Service_ID`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      []
     );
 
     return NextResponse.json(result.rows);
@@ -26,31 +17,20 @@ export async function GET() {
       { error: 'Failed to fetch services' },
       { status: 500 }
     );
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (error) {
-        console.error('Error closing connection:', error);
-      }
-    }
   }
 }
 
 // POST /api/services
 export async function POST(request) {
-  let connection;
   try {
     const body = await request.json();
     const { ServiceName, Description, Price, Duration, Category } = body;
 
-    connection = await oracledb.getConnection(dbConfig);
-    const result = await connection.execute(
+    const result = await execute(
       `INSERT INTO Service (Service_ID, ServiceName, Description, Price, Duration, Category) 
        VALUES (Service_Seq.NEXTVAL, :1, :2, :3, :4, :5)
        RETURNING Service_ID INTO :6`,
-      [ServiceName, Description, Price, Duration, Category, { dir: oracledb.BIND_OUT }],
-      { autoCommit: true }
+      [ServiceName, Description, Price, Duration, Category, { dir: oracledb.BIND_OUT }]
     );
 
     return NextResponse.json({ 
@@ -63,26 +43,16 @@ export async function POST(request) {
       { error: 'Failed to create service' },
       { status: 500 }
     );
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (error) {
-        console.error('Error closing connection:', error);
-      }
-    }
   }
 }
 
 // PUT /api/services/[id]
 export async function PUT(request, { params }) {
-  let connection;
   try {
     const body = await request.json();
     const { ServiceName, Description, Price, Duration, Category } = body;
 
-    connection = await oracledb.getConnection(dbConfig);
-    await connection.execute(
+    await execute(
       `UPDATE Service 
        SET ServiceName = :1, 
            Description = :2, 
@@ -90,8 +60,7 @@ export async function PUT(request, { params }) {
            Duration = :4, 
            Category = :5
        WHERE Service_ID = :6`,
-      [ServiceName, Description, Price, Duration, Category, params.id],
-      { autoCommit: true }
+      [ServiceName, Description, Price, Duration, Category, params.id]
     );
 
     return NextResponse.json({ 
@@ -103,28 +72,16 @@ export async function PUT(request, { params }) {
       { error: 'Failed to update service' },
       { status: 500 }
     );
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (error) {
-        console.error('Error closing connection:', error);
-      }
-    }
   }
 }
 
 // DELETE /api/services/[id]
 export async function DELETE(request, { params }) {
-  let connection;
   try {
-    connection = await oracledb.getConnection(dbConfig);
-    
     // First check if service is used in any appointments
-    const checkResult = await connection.execute(
+    const checkResult = await execute(
       `SELECT COUNT(*) as count FROM Appointment WHERE Service_ID = :1`,
-      [params.id],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      [params.id]
     );
 
     if (checkResult.rows[0].COUNT > 0) {
@@ -134,10 +91,9 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await connection.execute(
+    await execute(
       `DELETE FROM Service WHERE Service_ID = :1`,
-      [params.id],
-      { autoCommit: true }
+      [params.id]
     );
 
     return NextResponse.json({ 
@@ -149,13 +105,5 @@ export async function DELETE(request, { params }) {
       { error: 'Failed to delete service' },
       { status: 500 }
     );
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (error) {
-        console.error('Error closing connection:', error);
-      }
-    }
   }
 } 
